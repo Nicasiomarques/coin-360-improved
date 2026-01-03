@@ -1,0 +1,5 @@
+{
+  "name": "CryptoView 360 AI",
+  "description": "A real-time cryptocurrency market visualization tool (Coin360 style) powered by Gemini AI for market sentiment analysis and asset insights.",
+  "requestFramePermissions": []
+}
