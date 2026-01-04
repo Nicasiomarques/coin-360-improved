@@ -28,6 +28,7 @@ const CoinDrawer: React.FC<CoinDrawerProps> = ({ coin, onClose }) => {
           {/* Top: Chart */}
           <div className="w-full">
             <CoinChart 
+                key={coin.id}
                 coin={coin} 
                 analysisData={data?.technicalAnalysis || null} 
             />

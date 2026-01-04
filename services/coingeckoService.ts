@@ -48,7 +48,8 @@ export const getTopCoins = async (limit: number = 10): Promise<CoinData[]> => {
   const url = `${BASE_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=true&price_change_percentage=24h`;
   
   try {
-    return await fetchWithCache<CoinData[]>(url, cacheKey, CACHE_DURATION);
+    const data = await fetchWithCache<any[]>(url, cacheKey, CACHE_DURATION);
+    return data;
   } catch (e) {
     return [];
   }
@@ -62,7 +63,8 @@ export const getCoinDetails = async (ids: string[]): Promise<CoinData[]> => {
     const url = `${BASE_URL}/coins/markets?vs_currency=usd&ids=${joinedIds}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`;
 
     try {
-        return await fetchWithCache<CoinData[]>(url, cacheKey, CACHE_DURATION);
+        const data = await fetchWithCache<any[]>(url, cacheKey, CACHE_DURATION);
+        return data;
     } catch (e) {
         return [];
     }
@@ -70,7 +72,6 @@ export const getCoinDetails = async (ids: string[]): Promise<CoinData[]> => {
 
 export const searchCoins = async (query: string): Promise<SearchResult[]> => {
   if (query.length < 2) return [];
-  // Search does not strictly need caching or heavy retry logic, usually fast
   try {
     const response = await fetch(`${BASE_URL}/search?query=${query}`);
     if (!response.ok) throw new Error('Search failed');

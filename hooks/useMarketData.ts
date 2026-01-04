@@ -10,20 +10,15 @@ export const useMarketData = () => {
 
   // Initial Load
   useEffect(() => {
-    const fetchInitial = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      const savedIdsStr = localStorage.getItem('cryptoView_ids');
-      let idsToFetch: string[] = [];
-      
-      if (savedIdsStr) {
-        try { 
-            idsToFetch = JSON.parse(savedIdsStr); 
-        } catch (e) { 
-            console.error("Error parsing saved IDs", e); 
-        }
-      }
-
       try {
+          const savedIdsStr = localStorage.getItem('cryptoView_ids');
+          let idsToFetch: string[] = [];
+          if (savedIdsStr) {
+            try { idsToFetch = JSON.parse(savedIdsStr); } catch (e) {}
+          }
+
           if (idsToFetch.length > 0) {
               const savedCoins = await getCoinDetails(idsToFetch);
               setCoins(savedCoins);
@@ -34,15 +29,15 @@ export const useMarketData = () => {
               setActiveCoinIds(topCoins.map(c => c.id));
           }
       } catch (error) {
-          console.error("Failed to fetch initial data", error);
+          console.error("Failed to fetch market data", error);
       } finally {
           setLoading(false);
       }
     };
-    fetchInitial();
+    fetchData();
   }, []);
 
-  // Sync to LocalStorage
+  // Sync IDs to LocalStorage
   useEffect(() => {
       if (activeCoinIds.length > 0) {
           localStorage.setItem('cryptoView_ids', JSON.stringify(activeCoinIds));
@@ -57,12 +52,10 @@ export const useMarketData = () => {
         const newCoinData = await getCoinDetails([coinId]);
         if (newCoinData.length > 0) {
           const coin = newCoinData[0];
-          
           if (!coin.market_cap || coin.market_cap <= 0) { 
              alert(`Cannot add ${coin.name}: Market Cap data is missing or zero.`); 
              return; 
           }
-          
           setCoins(prev => [...prev, coin]);
           setActiveCoinIds(prev => [...prev, coinId]);
         }
@@ -74,12 +67,15 @@ export const useMarketData = () => {
   };
 
   const refreshMarket = useCallback(async () => {
-      if (activeCoinIds.length === 0) return;
-      
       setLoading(true);
       try {
-          const updatedData = await getCoinDetails(activeCoinIds);
-          setCoins(updatedData);
+         if (activeCoinIds.length > 0) {
+            const updatedData = await getCoinDetails(activeCoinIds);
+            setCoins(updatedData);
+         } else {
+            const top = await getTopCoins(10);
+            setCoins(top);
+         }
       } catch (error) {
           console.error("Failed to refresh market", error);
       } finally {

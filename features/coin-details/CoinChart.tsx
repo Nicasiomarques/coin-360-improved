@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle, CrosshairMode, IPriceLine, MouseEventParams } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle, CrosshairMode, IPriceLine, MouseEventParams, CandlestickSeries } from 'lightweight-charts';
 import { CoinData, CandleData, AIAnalysisResult } from '../../types';
 import { getCoinOHLC } from '../../services/coingeckoService';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -50,12 +50,13 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
   const [showAI, setShowAI] = useState(true);
 
   // Legend State
-  const [legendData, setLegendData] = useState<{ open: number; high: number; low: number; close: number; percent?: number } | null>(null);
+  const [legendData, setLegendData] = useState<{ open: number; high: number; low: number; close: number } | null>(null);
   
   const wrapperRef = useRef<HTMLDivElement>(null); // For fullscreen
   const containerRef = useRef<HTMLDivElement>(null); // For chart rendering
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const rafRef = useRef<number | null>(null);
 
@@ -81,6 +82,7 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
 
   useEffect(() => {
     setIsLoading(true);
+    
     getCoinOHLC(coin.id, selectedDays).then(data => {
         setOhlcData(data);
         if (data.length > 0) {
@@ -92,43 +94,65 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
 
   useEffect(() => {
     if (!containerRef.current) return;
-    if (!chartRef.current) {
-      const chart = createChart(containerRef.current, {
-        layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: '#94a3b8', attributionLogo: false },
-        grid: { vertLines: { color: '#1e293b', style: LineStyle.Dotted }, horzLines: { color: '#1e293b', style: LineStyle.Dotted } },
-        width: containerRef.current.clientWidth, height: 400,
-        timeScale: { borderColor: '#334155', timeVisible: true, secondsVisible: false },
-        rightPriceScale: { borderColor: '#334155', scaleMargins: { top: 0.1, bottom: 0.1 } }, // Increased margins for overlays
-        crosshair: { mode: CrosshairMode.Magnet },
-      });
-      chartRef.current = chart;
-      candleSeriesRef.current = (chart as any).addCandlestickSeries({ upColor: '#10b981', downColor: '#f43f5e', borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#f43f5e' });
-      
-      // Subscribe to crosshair for Legend
-      chart.subscribeCrosshairMove((param: MouseEventParams) => {
-          if (param.time && candleSeriesRef.current) {
-             const price = param.seriesData.get(candleSeriesRef.current) as any;
-             if (price) {
-                 setLegendData({ open: price.open, high: price.high, low: price.low, close: price.close });
-             }
-          }
-      });
-
-      const ro = new ResizeObserver(entries => {
-         if(entries[0]?.contentRect) chart.applyOptions({ width: entries[0].contentRect.width, height: entries[0].contentRect.height });
-      });
-      ro.observe(containerRef.current);
-      return () => { ro.disconnect(); chart.remove(); chartRef.current = null; };
+    
+    // Always cleanup previous chart instance
+    if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
     }
+
+    const chart = createChart(containerRef.current, {
+      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: '#94a3b8', attributionLogo: false },
+      grid: { vertLines: { color: '#1e293b', style: LineStyle.Dotted }, horzLines: { color: '#1e293b', style: LineStyle.Dotted } },
+      width: containerRef.current.clientWidth, height: 400,
+      timeScale: { borderColor: '#334155', timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: '#334155', scaleMargins: { top: 0.1, bottom: 0.1 } }, // Increased margins for overlays
+      crosshair: { mode: CrosshairMode.Magnet },
+    });
+    chartRef.current = chart;
+
+    candleSeriesRef.current = chart.addSeries(CandlestickSeries, { 
+        upColor: '#10b981', 
+        downColor: '#f43f5e', 
+        borderVisible: false, 
+        wickUpColor: '#10b981', 
+        wickDownColor: '#f43f5e' 
+    }) as ISeriesApi<"Candlestick">;
+    
+    // Subscribe to crosshair for Legend
+    chart.subscribeCrosshairMove((param: MouseEventParams) => {
+        if (param.time && candleSeriesRef.current) {
+            const price = param.seriesData.get(candleSeriesRef.current) as any;
+            if (price) {
+                setLegendData({ open: price.open, high: price.high, low: price.low, close: price.close });
+            }
+        }
+    });
+
+    const ro = new ResizeObserver(entries => {
+        if(entries[0]?.contentRect) chart.applyOptions({ width: entries[0].contentRect.width, height: entries[0].contentRect.height });
+    });
+    ro.observe(containerRef.current);
+    
+    return () => { 
+        ro.disconnect(); 
+        if (chartRef.current) {
+            chartRef.current.remove(); 
+            chartRef.current = null; 
+        }
+    };
   }, []);
 
   // Update Data
   useEffect(() => {
-     if (chartRef.current && candleSeriesRef.current && ohlcData.length > 0) {
-        const data = ohlcData.filter((v, i, a) => a.findIndex(t => t.time === v.time) === i).sort((a, b) => (a.time as number) - (b.time as number));
-        candleSeriesRef.current.setData(data as any);
-        chartRef.current.timeScale().fitContent();
-     }
+     if (!chartRef.current || !candleSeriesRef.current || ohlcData.length === 0) return;
+
+     // Filter unique timestamps and sort
+     const sortedData = ohlcData.filter((v, i, a) => a.findIndex(t => t.time === v.time) === i).sort((a, b) => (a.time as number) - (b.time as number));
+     
+     candleSeriesRef.current.setData(sortedData as any);
+     
+     chartRef.current.timeScale().fitContent();
   }, [ohlcData]);
 
   // Sync Overlay Positions Loop (Conditional on showAI)
@@ -139,8 +163,8 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
     }
 
     const syncOverlays = () => {
-        if (!chartRef.current || !candleSeriesRef.current || !analysisData) return;
-
+        if (!chartRef.current || !analysisData || !candleSeriesRef.current) return;
+        
         const series = candleSeriesRef.current;
         const newOverlays: OverlayZone[] = [];
         const structure = analysisData.technicalStructure;
@@ -207,7 +231,6 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
              const yL = series.priceToCoordinate(l);
 
              if (yH !== null && yEq !== null && yL !== null) {
-                 // Premium Zone (High to Eq)
                  newOverlays.push({
                      id: 'premium',
                      top: Math.min(yH, yEq),
@@ -215,11 +238,10 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
                      label: 'PREMIUM',
                      type: 'PREMIUM',
                      colorClass: 'bg-rose-500/5',
-                     borderClass: 'border-t border-rose-500/20', // Only top border usually
+                     borderClass: 'border-t border-rose-500/20',
                      textClass: 'text-rose-500/50'
                  });
 
-                 // Discount Zone (Eq to Low)
                  newOverlays.push({
                      id: 'discount',
                      top: Math.min(yEq, yL),
@@ -242,21 +264,23 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
     return () => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [analysisData, ohlcData, showAI]); // Dependencies for restarting the loop if data changes
+  }, [analysisData, ohlcData, showAI]); 
 
-  // Handle Price Lines (Only for Setup: Entry, SL, TP) - Also Conditional on showAI
+  // Handle Price Lines (Only for Setup: Entry, SL, TP)
   useEffect(() => {
-    if (!candleSeriesRef.current) return;
+    // Determine active series
+    const series = candleSeriesRef.current;
+    if (!series) return;
 
     // Always Clear lines first
-    priceLinesRef.current.forEach(line => candleSeriesRef.current?.removePriceLine(line));
+    priceLinesRef.current.forEach(line => series.removePriceLine(line));
     priceLinesRef.current = [];
 
     if (!analysisData || !showAI) return;
 
     const addLine = (price: number | null, label: string, color: string, style = LineStyle.Solid, width = 2) => {
-       if (price && candleSeriesRef.current) {
-          const line = candleSeriesRef.current.createPriceLine({
+       if (price && series) {
+          const line = series.createPriceLine({
             price, color, lineWidth: width as any, lineStyle: style, axisLabelVisible: true, title: label,
           });
           priceLinesRef.current.push(line);
@@ -282,17 +306,19 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
           {/* Left: Toggles & Legend */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Live Data</h3>
+                  <span className={`w-2 h-2 rounded-full bg-emerald-500 animate-pulse`}></span>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
+                    Live Data
+                  </h3>
               </div>
               
-              {/* OHLC Legend - "Essential Doses" */}
+              {/* OHLC Legend */}
               {legendData && (
                   <div className="flex gap-3 text-[10px] font-mono text-slate-400 bg-black/20 px-2 py-1 rounded border border-slate-800/50">
-                      <span>O: <span className="text-slate-200">{legendData.open.toFixed(2)}</span></span>
-                      <span>H: <span className="text-slate-200">{legendData.high.toFixed(2)}</span></span>
-                      <span>L: <span className="text-slate-200">{legendData.low.toFixed(2)}</span></span>
-                      <span>C: <span className="text-slate-200">{legendData.close.toFixed(2)}</span></span>
+                        <span>O: <span className="text-slate-200">{legendData.open.toFixed(4)}</span></span>
+                        <span>H: <span className="text-slate-200">{legendData.high.toFixed(4)}</span></span>
+                        <span>L: <span className="text-slate-200">{legendData.low.toFixed(4)}</span></span>
+                        <span>C: <span className="text-slate-200">{legendData.close.toFixed(4)}</span></span>
                   </div>
               )}
           </div>
