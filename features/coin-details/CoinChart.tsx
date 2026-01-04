@@ -57,7 +57,7 @@ export const CoinChart: React.FC<CoinChartProps> = ({ coin, analysisData }) => {
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | null>(null);
 
   // Full Screen Handler
   const toggleFullScreen = () => {

@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
 import { CoinData } from "../types";
 
-export const MODEL_ID = 'gemini-3-pro-preview';
+export const MODEL_ID = 'gemini-3-flash-preview';
 
 // --- SHARED SCHEMAS ---
 
@@ -85,13 +85,13 @@ export const NEWS_SCHEMA_DEF = {
         properties: {
           title: { type: Type.STRING },
           source: { type: Type.STRING },
-          timeAgo: { type: Type.STRING },
+          timeAgo: { type: Type.STRING, description: "Calculated time elapsed since publication (e.g. '2 hours ago')" },
           impactLevel: { type: Type.STRING, enum: ['High', 'Medium', 'Low'] },
           impactDescription: { type: Type.STRING, description: "Short sentence on why this moves price." },
           sentiment: { type: Type.STRING, enum: ['Positive', 'Negative', 'Neutral'] },
           url: { type: Type.STRING }
         },
-        required: ['title', 'source', 'impactLevel', 'impactDescription', 'sentiment']
+        required: ['title', 'source', 'timeAgo', 'impactLevel', 'impactDescription', 'sentiment']
       }
     }
   },
@@ -109,9 +109,14 @@ export const COMBINED_SCHEMA = {
 
 // --- PROMPT ---
 
-export const getCombinedPrompt = (coin: CoinData) => `
+export const getCombinedPrompt = (coin: CoinData) => {
+  const now = new Date().toUTCString();
+  
+  return `
 You are an elite Crypto Market Analyst specializing in both Smart Money Concepts (SMC) technical analysis AND Fundamental News Analysis. 
 You must perform two distinct analyses for **${coin.name} (${coin.symbol})** in a single execution.
+
+**Current Reference Date/Time:** ${now}
 
 **Live Market Data:**
 - Price: $${coin.current_price}
@@ -132,8 +137,10 @@ Your goal is to construct a professional SMC TRADE PLAN.
 1. **Search:** Use Google Search to find specific news for ${coin.symbol} from the last 24h to 7 days.
 2. **Fallback:** If NO specific news exists, search for "Crypto Market News Today" or "Bitcoin Price Action" and analyze correlation.
 3. **Selection:** Select exactly 3-5 distinct news items.
-4. **Analysis:** For each, determine Title, Source, Time, Sentiment, and specifically the IMPACT on ${coin.symbol}'s price.
+4. **Analysis:** For each, determine Title, Source, Sentiment, and specifically the IMPACT on ${coin.symbol}'s price.
+5. **Time Calculation:** You MUST calculate the 'timeAgo' field (e.g., "4 hours ago", "2 days ago") by comparing the news publication time found in the search results against the **Current Reference Date/Time** provided above (${now}).
 
 **OUTPUT:**
 Return a single JSON object containing both 'technicalAnalysis' and 'newsAnalysis' matching the schema.
 `;
+};

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CoinData, NewsAnalysisResult } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
@@ -22,21 +22,47 @@ const ImpactBadge: React.FC<{ level: string }> = ({ level }) => {
 };
 
 export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin, newsData, isLoading }) => {
+  const [activeFilter, setActiveFilter] = useState<'All' | 'High' | 'Medium' | 'Low'>('All');
+
+  const filteredNews = newsData?.newsItems.filter(item => {
+    if (activeFilter === 'All') return true;
+    return item.impactLevel === activeFilter;
+  }) || [];
+
   return (
     <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative flex flex-col h-full shadow-xl">
-      <div className="px-5 py-4 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border-b border-slate-800 flex items-center justify-between flex-none backdrop-blur-sm">
-        <h3 className="text-lg font-bold text-white flex items-center gap-3">
-           <span className="flex h-3 w-3 relative">
-               {isLoading && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
-               <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
-           </span>
-           <span className="tracking-tight">Recent News & Impact</span>
-        </h3>
-        {newsData && (
-             <span className={`text-[10px] font-bold px-2.5 py-1 rounded border uppercase tracking-wide shadow-sm ${newsData.globalSentiment === 'Bullish' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : newsData.globalSentiment === 'Bearish' ? 'border-rose-500/30 text-rose-400 bg-rose-500/10' : 'border-slate-500/30 text-slate-400 bg-slate-800/50'}`}>
-                 {newsData.globalSentiment} Sentiment
-             </span>
-        )}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border-b border-slate-800 flex flex-col backdrop-blur-sm">
+          <div className="px-5 py-4 flex items-center justify-between flex-none">
+            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+            <span className="flex h-3 w-3 relative">
+                {isLoading && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+            </span>
+            <span className="tracking-tight">Recent News & Impact</span>
+            </h3>
+            {newsData && (
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded border uppercase tracking-wide shadow-sm ${newsData.globalSentiment === 'Bullish' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : newsData.globalSentiment === 'Bearish' ? 'border-rose-500/30 text-rose-400 bg-rose-500/10' : 'border-slate-500/30 text-slate-400 bg-slate-800/50'}`}>
+                    {newsData.globalSentiment} Sentiment
+                </span>
+            )}
+          </div>
+          
+          {/* Filters */}
+          <div className="px-5 pb-3 flex gap-2">
+             {(['All', 'High', 'Medium', 'Low'] as const).map(filter => (
+                 <button
+                    key={filter}
+                    onClick={() => setActiveFilter(filter)}
+                    className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                        activeFilter === filter 
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-sm' 
+                        : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-800 hover:text-slate-200'
+                    }`}
+                 >
+                    {filter === 'All' ? 'All News' : filter}
+                 </button>
+             ))}
+          </div>
       </div>
 
       <div className="p-5 flex-1 relative min-h-[300px] overflow-y-auto max-h-[600px] custom-scrollbar bg-slate-950">
@@ -54,8 +80,14 @@ export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin, newsData
                     <span className="text-xs">Market chatter is currently low.</span>
                 </div>
             )}
+            
+            {newsData && newsData.newsItems.length > 0 && filteredNews.length === 0 && !isLoading && (
+                 <div className="flex flex-col items-center justify-center h-32 text-slate-500 opacity-70">
+                    <p className="font-medium text-xs">No news with {activeFilter} Impact found.</p>
+                </div>
+            )}
 
-            {newsData?.newsItems.map((item, idx) => (
+            {filteredNews.map((item, idx) => (
                 <div key={idx} className="group bg-gradient-to-b from-slate-900 to-slate-900/50 border border-slate-800/80 rounded-xl p-5 hover:border-slate-600 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300">
                     {/* Header: Badges & Time */}
                     <div className="flex justify-between items-start mb-3">
@@ -73,9 +105,17 @@ export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin, newsData
                     </div>
                     
                     {/* Title */}
-                    <h4 className="text-base font-bold text-slate-100 mb-2 leading-snug group-hover:text-blue-200 transition-colors">
-                        {item.title}
-                    </h4>
+                    {item.url ? (
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="block mb-2 group/link">
+                             <h4 className="text-base font-bold text-slate-100 leading-snug group-hover/link:text-blue-400 group-hover/link:underline decoration-blue-500/30 underline-offset-4 transition-all">
+                                {item.title}
+                            </h4>
+                        </a>
+                    ) : (
+                         <h4 className="text-base font-bold text-slate-100 mb-2 leading-snug group-hover:text-blue-200 transition-colors">
+                            {item.title}
+                        </h4>
+                    )}
                     
                     {/* Source Link */}
                     <div className="flex items-center gap-2 mb-5">
