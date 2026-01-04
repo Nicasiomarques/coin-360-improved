@@ -3,6 +3,7 @@ import { CoinData } from "../types";
 
 export const MODEL_ID = 'gemini-3-pro-preview';
 
+// --- SMC PROMPT (Existing) ---
 export const getSMCPrompt = (coin: CoinData) => `
 Act as a world-class Smart Money Concepts (SMC) & ICT Specialist. 
 Focus strictly on Institutional Order Flow, Order Blocks (OB), Fair Value Gaps (FVG), Liquidity Sweeps (BSL/SSL), and Premium/Discount zones.
@@ -77,4 +78,49 @@ export const RESPONSE_SCHEMA = {
     summary: { type: Type.STRING, description: "Brief executive summary of the plan" }
   },
   required: ["marketContext", "technicalStructure", "setup", "confluences", "management", "summary"]
+};
+
+// --- NEWS & IMPACT PROMPT (Updated) ---
+
+export const getNewsPrompt = (coin: CoinData) => `
+You are a Real-Time Crypto Market Analyst.
+Find and analyze the most impactful news for **${coin.name} (${coin.symbol})**.
+
+**Execution Strategy:**
+1. **Search:** Use Google Search to find specific news for ${coin.symbol} from the last 24h to 7 days.
+2. **Fallback:** If NO specific news exists for ${coin.symbol}, search for "Crypto Market News Today" or "Bitcoin Price Action" and analyze how the general market sentiment affects ${coin.symbol} (correlation).
+3. **Selection:** Select exactly 3-5 distinct news items.
+
+**Analysis Requirements per Item:**
+- **Title:** Clear and catchy.
+- **Impact Level:** Determine if it moves the needle (High/Medium/Low).
+- **Description:** Explain *specifically* why this matters for the price of ${coin.symbol}.
+- **Sentiment:** Positive, Negative, or Neutral.
+- **URL:** Include the source link if found.
+
+**Return valid JSON matching the schema.**
+`;
+
+export const NEWS_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    globalSentiment: { type: Type.STRING, enum: ['Bullish', 'Bearish', 'Neutral'] },
+    newsItems: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING },
+          source: { type: Type.STRING },
+          timeAgo: { type: Type.STRING },
+          impactLevel: { type: Type.STRING, enum: ['High', 'Medium', 'Low'] },
+          impactDescription: { type: Type.STRING, description: "Short sentence on why this moves price." },
+          sentiment: { type: Type.STRING, enum: ['Positive', 'Negative', 'Neutral'] },
+          url: { type: Type.STRING }
+        },
+        required: ['title', 'source', 'impactLevel', 'impactDescription', 'sentiment']
+      }
+    }
+  },
+  required: ['globalSentiment', 'newsItems']
 };

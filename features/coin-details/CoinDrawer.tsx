@@ -4,6 +4,7 @@ import { CoinHeader } from './CoinHeader';
 import { CoinChart } from './CoinChart';
 import { CoinStats } from './CoinStats';
 import { AIAnalysisPanel } from './AIAnalysisPanel';
+import { NewsImpactPanel } from './NewsImpactPanel';
 
 interface CoinDrawerProps {
   coin: CoinData | null;
@@ -19,11 +20,27 @@ const CoinDrawer: React.FC<CoinDrawerProps> = ({ coin, onClose }) => {
       <div className="relative w-full max-w-7xl max-h-[95vh] bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-y-auto flex flex-col">
         <CoinHeader coin={coin} onClose={onClose} />
         <div className="flex-1 p-6 space-y-6">
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          
+          {/* Top: Chart */}
+          <div className="w-full">
             <CoinChart coin={coin} />
-            <CoinStats coin={coin} />
           </div>
-          <AIAnalysisPanel coin={coin} />
+
+          {/* Middle: Stats Grid (Cards requested below chart) */}
+          <div className="w-full">
+             <CoinStats coin={coin} />
+          </div>
+
+          {/* SMC Analysis (Full Width) */}
+          <div className="w-full">
+            <AIAnalysisPanel coin={coin} />
+          </div>
+          
+          {/* News & Impact (Full Width, below Analysis) */}
+          <div className="w-full">
+            <NewsImpactPanel coin={coin} />
+          </div>
+
         </div>
       </div>
     </div>

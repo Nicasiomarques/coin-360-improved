@@ -69,6 +69,23 @@ export interface AIAnalysisResult {
   summary: string;
 }
 
+// --- NEW TYPES FOR NEWS SECTION ---
+
+export interface NewsItem {
+  title: string;
+  source: string;
+  timeAgo: string;
+  impactLevel: 'High' | 'Medium' | 'Low';
+  impactDescription: string;
+  sentiment: 'Positive' | 'Negative' | 'Neutral';
+  url?: string;
+}
+
+export interface NewsAnalysisResult {
+  newsItems: NewsItem[];
+  globalSentiment: 'Bullish' | 'Bearish' | 'Neutral';
+}
+
 export interface CandleData {
   time: string | number; // Support YYYY-MM-DD or Unix Timestamp (seconds)
   open: number;
