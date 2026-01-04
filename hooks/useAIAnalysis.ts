@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CoinData, AIAnalysisResult, AnalysisStrategy } from '../types';
-import { analyzeCoinSituation } from '../services/geminiService';
+import { analyzeCoinComplete } from '../services/geminiService';
 
 export const useAIAnalysis = (coin: CoinData) => {
   const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
@@ -14,8 +14,8 @@ export const useAIAnalysis = (coin: CoinData) => {
         setAnalysis(null);
         setIsAnalyzing(true);
         try {
-            const result = await analyzeCoinSituation(coin, strategy);
-            if (isMounted) setAnalysis(result);
+            const result = await analyzeCoinComplete(coin);
+            if (isMounted) setAnalysis(result.technicalAnalysis);
         } catch (err) {
             console.error(err);
         } finally {

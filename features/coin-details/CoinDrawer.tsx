@@ -5,6 +5,7 @@ import { CoinChart } from './CoinChart';
 import { CoinStats } from './CoinStats';
 import { AIAnalysisPanel } from './AIAnalysisPanel';
 import { NewsImpactPanel } from './NewsImpactPanel';
+import { useCombinedAnalysis } from '../../hooks/useCombinedAnalysis';
 
 interface CoinDrawerProps {
   coin: CoinData | null;
@@ -12,6 +13,9 @@ interface CoinDrawerProps {
 }
 
 const CoinDrawer: React.FC<CoinDrawerProps> = ({ coin, onClose }) => {
+  // We lift the state up to the drawer so we make one call
+  const { data, isAnalyzing, refresh } = useCombinedAnalysis(coin || {} as CoinData);
+
   if (!coin) return null;
 
   return (
@@ -26,19 +30,28 @@ const CoinDrawer: React.FC<CoinDrawerProps> = ({ coin, onClose }) => {
             <CoinChart coin={coin} />
           </div>
 
-          {/* Middle: Stats Grid (Cards requested below chart) */}
+          {/* Middle: Stats Grid */}
           <div className="w-full">
              <CoinStats coin={coin} />
           </div>
 
           {/* SMC Analysis (Full Width) */}
           <div className="w-full">
-            <AIAnalysisPanel coin={coin} />
+            <AIAnalysisPanel 
+                coin={coin} 
+                analysisData={data?.technicalAnalysis || null} 
+                isLoading={isAnalyzing}
+                onRefresh={refresh}
+            />
           </div>
           
-          {/* News & Impact (Full Width, below Analysis) */}
+          {/* News & Impact (Full Width) */}
           <div className="w-full">
-            <NewsImpactPanel coin={coin} />
+            <NewsImpactPanel 
+                coin={coin} 
+                newsData={data?.newsAnalysis || null} 
+                isLoading={isAnalyzing} 
+            />
           </div>
 
         </div>

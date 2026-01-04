@@ -1,10 +1,11 @@
 import React from 'react';
-import { CoinData } from '../../types';
+import { CoinData, NewsAnalysisResult } from '../../types';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { useNewsAnalysis } from '../../hooks/useNewsAnalysis';
 
 interface NewsImpactPanelProps {
   coin: CoinData;
+  newsData: NewsAnalysisResult | null;
+  isLoading: boolean;
 }
 
 const ImpactBadge: React.FC<{ level: string }> = ({ level }) => {
@@ -20,15 +21,13 @@ const ImpactBadge: React.FC<{ level: string }> = ({ level }) => {
     );
 };
 
-export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin }) => {
-  const { newsData, isLoadingNews } = useNewsAnalysis(coin);
-
+export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin, newsData, isLoading }) => {
   return (
     <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative flex flex-col h-full shadow-xl">
       <div className="px-5 py-4 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border-b border-slate-800 flex items-center justify-between flex-none backdrop-blur-sm">
         <h3 className="text-lg font-bold text-white flex items-center gap-3">
            <span className="flex h-3 w-3 relative">
-               {isLoadingNews && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
+               {isLoading && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
            </span>
            <span className="tracking-tight">Recent News & Impact</span>
@@ -41,7 +40,7 @@ export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin }) => {
       </div>
 
       <div className="p-5 flex-1 relative min-h-[300px] overflow-y-auto max-h-[600px] custom-scrollbar bg-slate-950">
-         {isLoadingNews && !newsData && (
+         {isLoading && !newsData && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm">
                 <LoadingSpinner className="h-6 w-6 border-2 border-blue-500 mb-3" />
                 <span className="text-blue-400 font-mono text-xs animate-pulse tracking-widest uppercase">Scanning Global Media...</span>
@@ -49,7 +48,7 @@ export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin }) => {
          )}
          
          <div className="space-y-4">
-            {newsData?.newsItems.length === 0 && !isLoadingNews && (
+            {newsData?.newsItems.length === 0 && !isLoading && (
                 <div className="flex flex-col items-center justify-center h-full text-slate-500 py-10 opacity-70">
                     <p className="mb-2 font-medium">No significant news found for {coin.symbol}.</p>
                     <span className="text-xs">Market chatter is currently low.</span>
@@ -86,7 +85,7 @@ export const NewsImpactPanel: React.FC<NewsImpactPanelProps> = ({ coin }) => {
                          </a>}
                     </div>
                     
-                    {/* Impact Box - Visual Improvement */}
+                    {/* Impact Box */}
                     <div className="relative mt-2">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-l-full"></div>
                         <div className="bg-slate-950/80 rounded-r-lg border-y border-r border-slate-800/60 p-3 pl-4">

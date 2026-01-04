@@ -3,36 +3,9 @@ import { CoinData } from "../types";
 
 export const MODEL_ID = 'gemini-3-pro-preview';
 
-// --- SMC PROMPT (Existing) ---
-export const getSMCPrompt = (coin: CoinData) => `
-Act as a world-class Smart Money Concepts (SMC) & ICT Specialist. 
-Focus strictly on Institutional Order Flow, Order Blocks (OB), Fair Value Gaps (FVG), Liquidity Sweeps (BSL/SSL), and Premium/Discount zones.
-Your 'keyLevels' should mention OBs, Breakers, or Mitigation Blocks.
+// --- SHARED SCHEMAS ---
 
-Analyze ${coin.name} (${coin.symbol}).
-
-Live Data:
-- Price: $${coin.current_price}
-- 24h Change: ${coin.price_change_percentage_24h}%
-- ATH: $${coin.ath}
-- 24h Low/High: $${coin.low_24h} / $${coin.high_24h}
-
-Your goal is to construct a professional SMC TRADE PLAN. 
-Do not just describe the chart, tell me exactly how to trade it based on institutional footprints.
-
-1. Determine Context: Market Phase (Accumulation, Expansion, etc.) and Bias.
-2. Identify the Setup: 
-   - Precise Entry Zone (e.g. "Bullish OB at $X" or "FVG Fill").
-   - Hard Stop Loss (Invalidation point, e.g. "Below Swing Low").
-   - Take Profits (Liquidity targets / BSL / SSL).
-   - Risk/Reward calculation (Estimate).
-3. List Confluences: Why take this trade? (e.g., "MSS + OTE + FVG").
-4. Define Management: When to move to Break Even? When to take partials?
-
-Return JSON only matching the specific schema.
-`;
-
-export const RESPONSE_SCHEMA = {
+export const TECHNICAL_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     marketContext: {
@@ -80,28 +53,7 @@ export const RESPONSE_SCHEMA = {
   required: ["marketContext", "technicalStructure", "setup", "confluences", "management", "summary"]
 };
 
-// --- NEWS & IMPACT PROMPT (Updated) ---
-
-export const getNewsPrompt = (coin: CoinData) => `
-You are a Real-Time Crypto Market Analyst.
-Find and analyze the most impactful news for **${coin.name} (${coin.symbol})**.
-
-**Execution Strategy:**
-1. **Search:** Use Google Search to find specific news for ${coin.symbol} from the last 24h to 7 days.
-2. **Fallback:** If NO specific news exists for ${coin.symbol}, search for "Crypto Market News Today" or "Bitcoin Price Action" and analyze how the general market sentiment affects ${coin.symbol} (correlation).
-3. **Selection:** Select exactly 3-5 distinct news items.
-
-**Analysis Requirements per Item:**
-- **Title:** Clear and catchy.
-- **Impact Level:** Determine if it moves the needle (High/Medium/Low).
-- **Description:** Explain *specifically* why this matters for the price of ${coin.symbol}.
-- **Sentiment:** Positive, Negative, or Neutral.
-- **URL:** Include the source link if found.
-
-**Return valid JSON matching the schema.**
-`;
-
-export const NEWS_SCHEMA = {
+export const NEWS_SCHEMA_DEF = {
   type: Type.OBJECT,
   properties: {
     globalSentiment: { type: Type.STRING, enum: ['Bullish', 'Bearish', 'Neutral'] },
@@ -124,3 +76,42 @@ export const NEWS_SCHEMA = {
   },
   required: ['globalSentiment', 'newsItems']
 };
+
+export const COMBINED_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    technicalAnalysis: TECHNICAL_SCHEMA,
+    newsAnalysis: NEWS_SCHEMA_DEF
+  },
+  required: ['technicalAnalysis', 'newsAnalysis']
+};
+
+// --- PROMPT ---
+
+export const getCombinedPrompt = (coin: CoinData) => `
+You are an elite Crypto Market Analyst specializing in both Smart Money Concepts (SMC) technical analysis AND Fundamental News Analysis. 
+You must perform two distinct analyses for **${coin.name} (${coin.symbol})** in a single execution.
+
+**Live Market Data:**
+- Price: $${coin.current_price}
+- 24h Change: ${coin.price_change_percentage_24h}%
+- ATH: $${coin.ath}
+- 24h Low/High: $${coin.low_24h} / $${coin.high_24h}
+
+--- PART 1: SMC TECHNICAL ANALYSIS ---
+Focus strictly on Institutional Order Flow, Order Blocks (OB), Fair Value Gaps (FVG), and Liquidity Sweeps.
+Your goal is to construct a professional SMC TRADE PLAN.
+1. Determine Market Phase & Bias.
+2. Identify Setup: Precise Entry Zone, Hard Stop Loss, Take Profits (Liquidity targets), R:R.
+3. List Confluences (e.g. MSS + OTE + FVG).
+4. Define Management.
+
+--- PART 2: NEWS & FUNDAMENTAL ANALYSIS ---
+1. **Search:** Use Google Search to find specific news for ${coin.symbol} from the last 24h to 7 days.
+2. **Fallback:** If NO specific news exists, search for "Crypto Market News Today" or "Bitcoin Price Action" and analyze correlation.
+3. **Selection:** Select exactly 3-5 distinct news items.
+4. **Analysis:** For each, determine Title, Source, Time, Sentiment, and specifically the IMPACT on ${coin.symbol}'s price.
+
+**OUTPUT:**
+Return a single JSON object containing both 'technicalAnalysis' and 'newsAnalysis' matching the schema.
+`;

@@ -69,8 +69,6 @@ export interface AIAnalysisResult {
   summary: string;
 }
 
-// --- NEW TYPES FOR NEWS SECTION ---
-
 export interface NewsItem {
   title: string;
   source: string;
@@ -84,6 +82,11 @@ export interface NewsItem {
 export interface NewsAnalysisResult {
   newsItems: NewsItem[];
   globalSentiment: 'Bullish' | 'Bearish' | 'Neutral';
+}
+
+export interface CombinedAnalysisResult {
+  technicalAnalysis: AIAnalysisResult;
+  newsAnalysis: NewsAnalysisResult;
 }
 
 export interface CandleData {

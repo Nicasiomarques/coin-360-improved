@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CoinData, NewsAnalysisResult } from '../types';
-import { analyzeNewsImpact } from '../services/geminiService';
+import { analyzeCoinComplete } from '../services/geminiService';
 
 export const useNewsAnalysis = (coin: CoinData) => {
   const [newsData, setNewsData] = useState<NewsAnalysisResult | null>(null);
@@ -13,8 +13,8 @@ export const useNewsAnalysis = (coin: CoinData) => {
         setNewsData(null);
         setIsLoadingNews(true);
         try {
-            const result = await analyzeNewsImpact(coin);
-            if (isMounted) setNewsData(result);
+            const result = await analyzeCoinComplete(coin);
+            if (isMounted) setNewsData(result.newsAnalysis);
         } catch (err) {
             console.error(err);
         } finally {
