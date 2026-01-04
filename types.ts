@@ -1,3 +1,4 @@
+
 export interface CoinData {
   id: string;
   symbol: string;
@@ -30,20 +31,42 @@ export interface SearchResult {
   thumb: string;
 }
 
-export interface ICTAnalysis {
-  marketStructure: string;
-  orderBlocks: string;
-  fairValueGaps: string;
-  liquiditySweeps: string;
-  premiumDiscount: 'Premium' | 'Discount' | 'Equilibrium';
+export enum AnalysisStrategy {
+  SMC = 'Smart Money Concepts (SMC)'
+}
+
+export interface TradeSetup {
+  direction: 'Long' | 'Short' | 'Neutral';
+  entryZone: string;
+  stopLoss: string;
+  takeProfits: string[];
+  invalidationCriteria: string;
+  riskRewardRatio: string;
+  confidenceLevel: 'High' | 'Medium' | 'Low';
+}
+
+export interface MarketContext {
+  phase: 'Accumulation' | 'Expansion' | 'Distribution' | 'Consolidation';
+  bias: 'Bullish' | 'Bearish' | 'Range-bound';
+  volatility: 'Low' | 'Normal' | 'High';
+}
+
+export interface TradeManagement {
+  partialTakeProfit: string;
+  breakEvenCondition: string;
 }
 
 export interface AIAnalysisResult {
-  sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+  marketContext: MarketContext;
+  technicalStructure: {
+    marketStructure: string;
+    keyLevels: string; // Order Blocks / FVGs combined description
+    liquidityFocus: string; // BSL / SSL
+  };
+  setup: TradeSetup;
+  confluences: string[]; // List of technical reasons
+  management: TradeManagement;
   summary: string;
-  ictAnalysis: ICTAnalysis;
-  trendStatus: string;
-  suggestedStrategy: string;
 }
 
 export interface CandleData {
