@@ -56,12 +56,26 @@ export interface TradeManagement {
   breakEvenCondition: string;
 }
 
+export interface KeyZone {
+  type: 'Order Block' | 'FVG' | 'Resistance' | 'Support';
+  priceLow: number;
+  priceHigh: number;
+  description: string;
+}
+
+export interface DealingRange {
+    high: number;
+    low: number;
+}
+
 export interface AIAnalysisResult {
   marketContext: MarketContext;
   technicalStructure: {
     marketStructure: string;
     keyLevels: string; // Order Blocks / FVGs combined description
     liquidityFocus: string; // BSL / SSL
+    zones: KeyZone[];
+    dealingRange?: DealingRange;
   };
   setup: TradeSetup;
   confluences: string[]; // List of technical reasons

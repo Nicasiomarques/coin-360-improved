@@ -8,7 +8,13 @@ const CACHE_TTL = 15 * 60 * 1000; // 15 Minutes
 const FALLBACK_COMBINED: CombinedAnalysisResult = {
   technicalAnalysis: {
     marketContext: { phase: 'Consolidation', bias: 'Range-bound', volatility: 'Low' },
-    technicalStructure: { marketStructure: 'N/A', keyLevels: 'N/A', liquidityFocus: 'N/A' },
+    technicalStructure: { 
+        marketStructure: 'N/A', 
+        keyLevels: 'N/A', 
+        liquidityFocus: 'N/A',
+        zones: [],
+        dealingRange: { high: 0, low: 0 }
+    },
     setup: {
       direction: 'Neutral',
       entryZone: 'N/A',

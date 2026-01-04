@@ -21,10 +21,31 @@ export const TECHNICAL_SCHEMA = {
        type: Type.OBJECT,
        properties: {
           marketStructure: { type: Type.STRING, description: "Market Structure (MSS, BOS, ChoCH)" },
-          keyLevels: { type: Type.STRING, description: "Key Levels (OB, FVG, Breaker)" },
-          liquidityFocus: { type: Type.STRING, description: "Where is the draw on liquidity?" }
+          keyLevels: { type: Type.STRING, description: "Key Levels text description" },
+          liquidityFocus: { type: Type.STRING, description: "Where is the draw on liquidity?" },
+          zones: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                type: { type: Type.STRING, enum: ['Order Block', 'FVG', 'Resistance', 'Support'] },
+                priceLow: { type: Type.NUMBER, description: "Lower price of the zone" },
+                priceHigh: { type: Type.NUMBER, description: "Higher price of the zone" },
+                description: { type: Type.STRING, description: "Short label e.g. '1H Bullish OB'" }
+              },
+              required: ['type', 'priceLow', 'priceHigh', 'description']
+            }
+          },
+          dealingRange: {
+             type: Type.OBJECT,
+             properties: {
+                high: { type: Type.NUMBER, description: "Recent Swing High Price" },
+                low: { type: Type.NUMBER, description: "Recent Swing Low Price" }
+             },
+             required: ['high', 'low']
+          }
        },
-       required: ['marketStructure', 'keyLevels', 'liquidityFocus']
+       required: ['marketStructure', 'keyLevels', 'liquidityFocus', 'zones']
     },
     setup: {
         type: Type.OBJECT,
@@ -102,9 +123,10 @@ You must perform two distinct analyses for **${coin.name} (${coin.symbol})** in 
 Focus strictly on Institutional Order Flow, Order Blocks (OB), Fair Value Gaps (FVG), and Liquidity Sweeps.
 Your goal is to construct a professional SMC TRADE PLAN.
 1. Determine Market Phase & Bias.
-2. Identify Setup: Precise Entry Zone, Hard Stop Loss, Take Profits (Liquidity targets), R:R.
-3. List Confluences (e.g. MSS + OTE + FVG).
-4. Define Management.
+2. **Chart Marking:** Identify specific Price Zones for **Order Blocks** and **FVGs** (Fair Value Gaps) with exact low/high prices.
+3. **Dealing Range:** Identify the current Dealing Range (Swing High to Swing Low) to define Premium vs Discount.
+4. Identify Setup: Precise Entry Zone, Hard Stop Loss, Take Profits (Liquidity targets), R:R.
+5. List Confluences.
 
 --- PART 2: NEWS & FUNDAMENTAL ANALYSIS ---
 1. **Search:** Use Google Search to find specific news for ${coin.symbol} from the last 24h to 7 days.
